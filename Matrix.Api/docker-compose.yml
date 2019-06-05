@@ -1,0 +1,23 @@
+﻿FROM mcr.microsoft.com/dotnet/core/aspnet:2.2 AS base
+WORKDIR /app
+EXPOSE 80
+
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
+WORKDIR /src
+COPY Matrix.sln ./
+COPY Matrix/Matrix.csproj Matrix/
+COPY Matrix.Framework/Matrix.Framework.csproj Matrix.Framework/
+COPY Matrix.Api/Matrix.Api.csproj Matrix.Api/
+COPY Matrix.Api.Business/Matrix.Api.Business.csproj Matrix.Api.Business/
+RUN dotnet restore "Matrix.Api/Matrix.Api.csproj"
+COPY . .
+WORKDIR /src/Matrix.Api
+RUN dotnet build "Matrix.Api.csproj" -c Release -o /app
+
+FROM build AS publish
+RUN dotnet publish "Matrix.Api.csproj" -c Release -o /app
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app .
+ENTRYPOINT ["dotnet", "Matrix.Api.dll"]
